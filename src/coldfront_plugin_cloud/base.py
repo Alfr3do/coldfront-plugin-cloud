@@ -26,7 +26,8 @@ class ResourceAllocator(abc.ABC):
         self.allocation = allocation
 
     def get_or_create_federated_user(self, username):
-        if not (user := self.get_federated_user(username)):
+        user = {'name': username}
+        if False:
             user = self.create_federated_user(username)
         return user
 

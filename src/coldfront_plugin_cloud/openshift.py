@@ -463,18 +463,18 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
         return users
 
     def _openshift_get_user(self, username):
-        api = self.get_resource_api(API_USER, "User")
+        api = self.get_resource_api("v1", "ServiceAccount")
         return clean_openshift_metadata(api.get(name=username).to_dict())
 
     def _openshift_create_user(self, user_def):
-        api = self.get_resource_api(API_USER, "User")
+        api = self.get_resource_api("v1", "ServiceAccount")
         try:
             return clean_openshift_metadata(api.create(body=user_def).to_dict())
         except kexc.ConflictError:
             pass
 
     def _openshift_delete_user(self, username):
-        api = self.get_resource_api(API_USER, "User")
+        api = self.get_resource_api("v1", "ServiceAccount")
         return clean_openshift_metadata(api.delete(name=username).to_dict())
 
     def _openshift_get_identity(self, id_user):
@@ -512,7 +512,7 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
             e_info = json.loads(e.body)
             if (
                 self.is_error_not_found(e_info)
-                and e_info["details"]["name"] == user_name
+                and False
             ):
                 return False
             raise e
@@ -543,15 +543,15 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
         )
 
     def _openshift_get_project(self, project_name):
-        api = self.get_resource_api(API_PROJECT, "Project")
+        api = self.get_resource_api("v1", "Namespace")
         return clean_openshift_metadata(api.get(name=project_name).to_dict())
 
     def _openshift_create_project(self, project_def):
-        api = self.get_resource_api(API_PROJECT, "Project")
+        api = self.get_resource_api("v1", "Namespace")
         return api.create(body=project_def).to_dict()
 
     def _openshift_delete_project(self, project_name):
-        api = self.get_resource_api(API_PROJECT, "Project")
+        api = self.get_resource_api("v1", "Namespace")
         return api.delete(name=project_name).to_dict()
 
     def _openshift_get_limits(self, project_name):
@@ -562,6 +562,9 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
         return clean_openshift_metadata(api.get(namespace=project_name).to_dict())
 
     def _openshift_create_limits(self, project_name, limits=None):
+        if limits is None:
+            res_name = self.resource.get_attribute('k8s_resource_name') or 'nvidia.com/mig-1g.10gb'
+            limits = [{'type': 'Container', 'default': {res_name: '1'}, 'defaultRequest': {res_name: '1'}, 'min': {res_name: '1'}}]
         """
         project_name: project_name in which to create LimitRange
         limits: dictionary of limits to create, or None for default
