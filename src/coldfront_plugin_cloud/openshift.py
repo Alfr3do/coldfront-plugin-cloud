@@ -187,6 +187,9 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
         self.verify = os.getenv(
             f"OPENSHIFT_{self.safe_resource_name}_VERIFY", ""
         ).lower()
+        mig_name = self.resource.get_attribute('k8s_resource_name')
+        if mig_name:
+            self.QUOTA_KEY_MAPPING[attributes.QUOTA_REQUESTS_GPU] =  lambda x: {mig_name: f"{x}"}
 
     @functools.cached_property
     def k8_client(self):
@@ -580,7 +583,8 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
     def _openshift_create_limits(self, project_name, limits=None):
         if limits is None:
             res_name = self.resource.get_attribute('k8s_resource_name') or 'nvidia.com/mig-1g.10gb'
-            limits = [{'type': 'Container', 'default': {res_name: '1', 'cpu': '500m', 'memory': '1Gi'}, 'defaultRequest': {res_name: '1', 'cpu': '100m', 'memory': '512Mi'}, 'min': {res_name: '1'}}]
+            quantity = str(self.allocation.quantity) if self.allocation else "0"
+            limits = [{'type': 'Container', 'default': {res_name: quantity, 'cpu': '500m', 'memory': '1Gi'}, 'defaultRequest': {res_name: quantity, 'cpu': '100m', 'memory': '512Mi'}, 'min': {res_name: quantity}}]
         """
         project_name: project_name in which to create LimitRange
         limits: dictionary of limits to create, or None for default
