@@ -277,7 +277,8 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
         project_id = utils.get_unique_project_name(
             sanitized_project_name, max_length=self.project_name_max_length
         )
-        project_name = project_id
+        project_name = sanitized_project_name[:self.project_name_max_length]
+        #project_name = project_id
         self._create_project(project_name, project_id)
         return self.Project(project_name, project_id)
 
@@ -371,6 +372,8 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
 
     def assign_role_on_user(self, username, project_id):
         """Assign a role to a user in a project using direct OpenShift API calls"""
+        # Wait for Rancher to finalize the namespace
+        time.sleep(0.1) 
         try:
             # Try to get existing rolebindings with same name
             # as the role name in project's namespace
