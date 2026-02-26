@@ -442,9 +442,19 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
 
         self._openshift_create_project(project_def)
         self._openshift_create_limits(project_name)
+        self._create_role_binding_for_hub(project_name)
 
         logger.info(f"Project {project_id} and limit range successfully created")
 
+    def _create_role_binding_for_hub(self, project_name):
+        api = self.get_resource_api("rbac.authorization.k8s.io/v1", "RoleBinding")
+        payload = {
+            "metadata": {"name": "jupyterhub-spawner-access"},
+            "subjects": [{"kind": "ServiceAccount", "name": "hub", "namespace": "jupyterhub"}],
+            "roleRef": {"kind": "ClusterRole", "name": "jupyterhub-spawner-limited", "apiGroup": "rbac.authorization.k8s.io"}
+        }
+        api.create(body=payload, namespace=project_name)
+    
     def _get_role(self, username, project_id):
         rolebindings = self._openshift_get_rolebindings(
             project_id, self.member_role_name
