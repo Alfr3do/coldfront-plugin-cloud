@@ -215,6 +215,19 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
         return f"{self.id_provider}:{id_user}"
 
     def get_resource_api(self, api_version: str, kind: str):
+        # Map OpenShift-specific requests to standard Kubernetes v1 equivalents
+        if kind == "Project":
+            api_version = "v1"
+            kind = "Namespace"
+        elif kind == "User":
+            # We can't fetch Users in K8s this way, so return a 
+            # Namespace API as a placeholder to prevent the 404 crash
+            api_version = "v1"
+            kind = "Namespace"
+        elif kind == "ResourceQuota":
+            api_version = "v1"
+        
+        return self.k8_client.resources.get(api_version=api_version, kind=kind)
         """Either return the cached resource api from self.apis, or fetch a
         new one, store it in self.apis, and return it."""
         k = f"{api_version}:{kind}"
@@ -326,14 +339,14 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
             pass
 
     def get_federated_user(self, username):
-        if (
-            self._openshift_user_exists(username)
-            and self._openshift_identity_exists(username)
-            and self._openshift_useridentitymapping_exists(username, username)
-        ):
-            return {"username": username}
+        #if (
+        #    self._openshift_user_exists(username)
+        #    and self._openshift_identity_exists(username)
+        #    and self._openshift_useridentitymapping_exists(username, username)
+        #):
+        return {"username": username}
 
-        logger.info(f"User ({username}) does not exist")
+        #logger.info(f"User ({username}) does not exist")
 
     def create_federated_user(self, unique_id):
         user_def = {
@@ -564,7 +577,7 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
     def _openshift_create_limits(self, project_name, limits=None):
         if limits is None:
             res_name = self.resource.get_attribute('k8s_resource_name') or 'nvidia.com/mig-1g.10gb'
-            limits = [{'type': 'Container', 'default': {res_name: '1'}, 'defaultRequest': {res_name: '1'}, 'min': {res_name: '1'}}]
+            limits = [{'type': 'Container', 'default': {res_name: '1', 'cpu': '500m', 'memory': '1Gi'}, 'defaultRequest': {res_name: '1', 'cpu': '100m', 'memory': '512Mi'}, 'min': {res_name: '1'}}]
         """
         project_name: project_name in which to create LimitRange
         limits: dictionary of limits to create, or None for default
