@@ -229,6 +229,10 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
             kind = "Namespace"
         elif kind == "ResourceQuota":
             api_version = "v1"
+        elif kind == "RoleBinding":
+            api_version = "rbac.authorization.k8s.io/v1"
+        elif kind == "Secret":
+            api_version = "v1"
         
         return self.k8_client.resources.get(api_version=api_version, kind=kind)
         """Either return the cached resource api from self.apis, or fetch a
@@ -454,6 +458,19 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
             "roleRef": {"kind": "ClusterRole", "name": "jupyterhub-spawner-limited", "apiGroup": "rbac.authorization.k8s.io"}
         }
         api.create(body=payload, namespace=project_name)
+    def _copy_harbor_secret(self, target_namespace):
+        api = self.get_resource_api("v1", "Secret")
+        source_secret = api.get(name="image-pull-secret", namespace="jupyterhub")
+    
+        new_secret_body = {
+            "apiVersion": "v1",
+            "kind": "Secret",
+            "metadata": {"name": "image-pull-secret"},
+            "type": "kubernetes.io/dockerconfigjson",
+            "data": source_secret.data
+        }
+        
+        api.create(body=new_secret_body, namespace=target_namespace)
     
     def _get_role(self, username, project_id):
         rolebindings = self._openshift_get_rolebindings(
