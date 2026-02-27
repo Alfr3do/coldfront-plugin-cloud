@@ -451,13 +451,20 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
         logger.info(f"Project {project_id} and limit range successfully created")
 
     def _create_role_binding_for_hub(self, project_name):
-        api = self.get_resource_api("rbac.authorization.k8s.io/v1", "RoleBinding")
-        payload = {
-            "metadata": {"name": "jupyterhub-spawner-access"},
-            "subjects": [{"kind": "ServiceAccount", "name": "hub", "namespace": "jupyterhub"}],
-            "roleRef": {"kind": "ClusterRole", "name": "jupyterhub-spawner-limited", "apiGroup": "rbac.authorization.k8s.io"}
-        }
-        api.create(body=payload, namespace=project_name)
+        extra_ns_attr = self.resource.get_attribute('extra_rolebindings') 
+        namespaces = [ns.strip() for ns in extra_ns_attr.split(',')]
+        if len(namespaces) > 0:
+            api = self.get_resource_api("rbac.authorization.k8s.io/v1", "RoleBinding")
+            for ns in namespaces:
+                
+                sa_name = f"{ns}-service-acct" 
+                role_name = f"{ns}-spawner-role" 
+                payload = {
+                    "metadata": {"name": f"access-from-{ns}"},
+                    "subjects": [{"kind": "ServiceAccount", "name": f"{sa_name}", "namespace": f"{ns}"}],
+                    "roleRef": {"kind": "ClusterRole", "name": f"{role_name}", "apiGroup": "rbac.authorization.k8s.io"}
+                }
+                api.create(body=payload, namespace=project_name)
     def _copy_harbor_secret(self, target_namespace):
         api = self.get_resource_api("v1", "Secret")
         source_secret = api.get(name="image-pull-secret", namespace="jupyterhub")
