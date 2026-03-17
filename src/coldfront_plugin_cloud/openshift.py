@@ -284,8 +284,7 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
         project_id = utils.get_unique_project_name(
             sanitized_project_name, max_length=self.project_name_max_length
         )
-        project_name = sanitized_project_name[:self.project_name_max_length]
-        #project_name = project_id
+        project_name = project_id
         self._create_project(project_name, project_id)
         return self.Project(project_name, project_id)
 
@@ -453,6 +452,8 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
     def _create_role_binding_for_hub(self, project_name):
         extra_ns_attr = self.resource.get_attribute('extra_rolebindings') 
         namespaces = [ns.strip() for ns in extra_ns_attr.split(',')]
+        members = self.allocation.project.users.all() if (self.allocation.project) else []
+        logger.info(f"found in members {members}")
         if len(namespaces) > 0:
             api = self.get_resource_api("rbac.authorization.k8s.io/v1", "RoleBinding")
             for ns in namespaces:
