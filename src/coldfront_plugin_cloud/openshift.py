@@ -466,14 +466,14 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
                     "roleRef": {"kind": "ClusterRole", "name": f"{role_name}", "apiGroup": "rbac.authorization.k8s.io"}
                 }
                 api.create(body=payload, namespace=project_name)
-                for pu in self.allocation.project.projectuser_set.all():
+                for pu in self.allocation.allocationuser_set.all():
                     member = pu.user
                     # Create the Kubernetes RoleBinding for this specific user
                     logger.info(f"found in members {member}")
                     payload_user = {
-                    "metadata": {"name": role_name, "namespace": ns},
-                    "subjects": [{"name": member.username, "kind": "User"}],
-                    "roleRef": {"name": role_name, "kind": "ClusterRole"},
+                    "metadata": {"name": f"access-to-{member.username}-from-{ns}", "namespace": ns},
+                    "subjects": [{"apiGroup": "rbac.authorization.k8s.io","name": member.username, "kind": "User"}],
+                    "roleRef": {"apiGroup": "rbac.authorization.k8s.io", "name": role_name, "kind": "ClusterRole"},
                     }
                     api.create(body=payload_user, namespace=ns)
                     
