@@ -1,3 +1,4 @@
+from enum import member
 import functools
 import json
 import logging
@@ -452,8 +453,7 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
     def _create_role_binding_for_hub(self, project_name):
         extra_ns_attr = self.resource.get_attribute('extra_rolebindings') 
         namespaces = [ns.strip() for ns in extra_ns_attr.split(',')]
-        members = self.allocation.project.users.all() if (self.allocation.project) else []
-        logger.info(f"found in members {members}")
+        
         if len(namespaces) > 0:
             api = self.get_resource_api("rbac.authorization.k8s.io/v1", "RoleBinding")
             for ns in namespaces:
@@ -466,6 +466,17 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
                     "roleRef": {"kind": "ClusterRole", "name": f"{role_name}", "apiGroup": "rbac.authorization.k8s.io"}
                 }
                 api.create(body=payload, namespace=project_name)
+                for pu in self.allocation.project.projectuser_set.all():
+                    member = pu.user
+                    # Create the Kubernetes RoleBinding for this specific user
+                    logger.info(f"found in members {member}")
+                    payload_user = {
+                    "metadata": {"name": role_name, "namespace": ns},
+                    "subjects": [{"name": member.username, "kind": "User"}],
+                    "roleRef": {"name": role_name, "kind": "ClusterRole"},
+                    }
+                    api.create(body=payload_user, namespace=ns)
+                    
     def _copy_harbor_secret(self, target_namespace):
         api = self.get_resource_api("v1", "Secret")
         source_secret = api.get(name="image-pull-secret", namespace="jupyterhub")
