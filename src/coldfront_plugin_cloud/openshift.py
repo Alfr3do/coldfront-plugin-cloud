@@ -434,7 +434,7 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
         # 'value' is usually a TextField in ColdFront
         attr, created = ResourceAttribute.objects.update_or_create(
             resource=self.resource,
-            attribute_type=attr_type,
+            resource_attribute_type=attr_type,
             defaults={'value': rancher_id}
         )
         return attr
