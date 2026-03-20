@@ -430,7 +430,7 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
         import requests
         rancher_token = os.getenv(f"OPENSHIFT_{self.safe_resource_name}_TOKEN")
         rancher_url = self.resource.get_attribute(attributes.RESOURCE_API_URL)
-        cluster_id = self.allocation.resource.get_attribute('cluster_id')
+        cluster_id = self.resource.get_attribute('cluster_id')
 
         headers = {
             "Authorization": f"Bearer {rancher_token}",
