@@ -428,19 +428,20 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
 
     def _create_project(self, project_name, project_id):
         pi_username = self.allocation.project.pi.username
-
+        rancher_id = self.resource.get_attribute('rancher_project_id')
         annotations = {
             "cf_project_id": str(self.allocation.project_id),
             "cf_pi": pi_username,
             "openshift.io/display-name": project_name,
             "openshift.io/requester": pi_username,
+            "field.cattle.io/projectId": rancher_id
         }
 
         project_def = {
             "metadata": {
                 "name": project_name,
                 "annotations": annotations,
-                "labels": PROJECT_DEFAULT_LABELS,
+                "labels": {**PROJECT_DEFAULT_LABELS, "field.cattle.io/projectId": rancher_id},
             },
         }
 
@@ -449,8 +450,10 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
         self._create_role_binding_for_hub(project_name)
 
         logger.info(f"Project {project_id} and limit range successfully created")
-
+    
     def _create_role_binding_for_hub(self, project_name):
+        #defined in coldfront resource attr, jhuh
+        rancher_id = self.resource.get_attribute('rancher_project_id')
         extra_ns_attr = self.resource.get_attribute('extra_rolebindings') 
         namespaces = [ns.strip() for ns in extra_ns_attr.split(',')]
         
@@ -468,14 +471,29 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
                 api.create(body=payload, namespace=project_name)
                 for pu in self.allocation.allocationuser_set.all():
                     member = pu.user
+                    user_ns = self._openshift_get_namespace(namespace_name=f"{project_name}-{member.username}")
+                    if (not user_ns):
+                        annotations = {
+                            "field.cattle.io/projectId": rancher_id
+                        }
+                        namespace_def = {
+                            "metadata": {
+                            "name": f"{project_name}-{member.username}",
+                            "annotations": annotations,
+                            "labels": annotations,
+                            },
+                        }
+                        self._openshift_create_namespace(namespace_def)
+
+                    
                     # Create the Kubernetes RoleBinding for this specific user
                     logger.info(f"found in members {member}")
                     payload_user = {
-                    "metadata": {"name": f"access-to-{member.username}-from-{ns}", "namespace": ns},
+                    "metadata": {"name": f"access-{member.username}-to-{project_name}", "namespace": project_name},
                     "subjects": [{"apiGroup": "rbac.authorization.k8s.io","name": member.username, "kind": "User"}],
-                    "roleRef": {"apiGroup": "rbac.authorization.k8s.io", "name": role_name, "kind": "ClusterRole"},
+                    "roleRef": {"apiGroup": "rbac.authorization.k8s.io", "name": "edit", "kind": "ClusterRole"},
                     }
-                    api.create(body=payload_user, namespace=ns)
+                    api.create(body=payload_user, namespace=project_name)
                     
     def _copy_harbor_secret(self, target_namespace):
         api = self.get_resource_api("v1", "Secret")
@@ -611,6 +629,10 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
         api = self.get_resource_api("v1", "Namespace")
         return clean_openshift_metadata(api.get(name=project_name).to_dict())
 
+    def _openshift_create_namespace(self, project_def):
+        api = self.get_resource_api("v1", "Namespace")
+        return api.create(body=project_def).to_dict()
+    
     def _openshift_create_project(self, project_def):
         api = self.get_resource_api("v1", "Namespace")
         return api.create(body=project_def).to_dict()
