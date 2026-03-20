@@ -13,7 +13,7 @@ import kubernetes.dynamic.exceptions as kexc
 from openshift.dynamic import DynamicClient
 
 from coldfront_plugin_cloud import attributes, base, utils
-
+from coldfront.core.resource.models import ResourceAttribute, ResourceAttributeType
 
 logger = logging.getLogger(__name__)
 
@@ -426,6 +426,19 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
             # Rolebinding doesn't exist, nothing to remove
             pass
 
+    def update_resource_project_id(self, rancher_id):
+        # 1. Get the attribute type object (must exist in ColdFront Admin first)
+        attr_type = ResourceAttributeType.objects.get(name='rancher_project_id')
+        
+        # 2. Update or create the specific attribute for this resource
+        # 'value' is usually a TextField in ColdFront
+        attr, created = ResourceAttribute.objects.update_or_create(
+            resource=self.resource,
+            attribute_type=attr_type,
+            defaults={'value': rancher_id}
+        )
+        return attr
+
     def call_rancher_api_to_create_project(self, project_name):
         import requests
         rancher_token = os.getenv(f"OPENSHIFT_{self.safe_resource_name}_TOKEN")
@@ -460,7 +473,8 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
         rancher_id = self.resource.get_attribute('rancher_project_id')
         if not rancher_id:
             rancher_id = self.call_rancher_api_to_create_project(project_name)
-            self.resource.set_attribute('rancher_project_id', rancher_id)
+            self.update_resource_project_id( rancher_id) 
+            
 
         annotations = {
             "cf_project_id": str(self.allocation.project_id),
