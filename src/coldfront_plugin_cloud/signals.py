@@ -7,8 +7,7 @@ from coldfront_plugin_cloud.tasks import (
     activate_allocation,
     add_user_to_allocation,
     disable_allocation,
-    remove_user_from_allocation,
-    call_rancher_api_to_create_project
+    remove_user_from_allocation
 )
 from coldfront.core.allocation.signals import (
     allocation_activate,
@@ -17,8 +16,7 @@ from coldfront.core.allocation.signals import (
     allocation_remove_user,
     allocation_change_approved,
 )
-from coldfront.core.project.models import Project
-from django.db.models.signals import post_save
+
 
 def is_async():
     # Note(knikolla): The presence of the REDIS_HOST env variable signifies
@@ -58,11 +56,3 @@ def activate_allocation_user_receiver(sender, **kwargs):
 def allocation_remove_user_receiver(sender, **kwargs):
     allocation_user_pk = kwargs.get("allocation_user_pk")
     remove_user_from_allocation(allocation_user_pk)
-
-
-@receiver(post_save, sender=Project)
-def project_post_save_receiver(sender, instance, created, **kwargs):
-    if created:
-        rancher_id = call_rancher_api_to_create_project(instance.title)
-        instance.set_attribute('rancher_project_id', rancher_id)
-        print(f"Successfully linked Project {instance.title} to Rancher ID {rancher_id}")

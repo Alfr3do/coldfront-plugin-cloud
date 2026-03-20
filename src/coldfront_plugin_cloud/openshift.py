@@ -426,9 +426,42 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
             # Rolebinding doesn't exist, nothing to remove
             pass
 
+    def call_rancher_api_to_create_project(self, project_name):
+        import requests
+        rancher_token = os.getenv(f"OPENSHIFT_{self.safe_resource_name}_TOKEN")
+        rancher_url = self.resource.get_attribute(attributes.RESOURCE_API_URL)
+        cluster_id = self.allocation.resource.get_attribute('cluster_id')
+
+        headers = {
+            "Authorization": f"Bearer {rancher_token}",
+            "Content-Type": "application/json",
+        }
+
+        payload = {
+            "name": project_name.split("-")[0:-1],
+            "namespaceId": "cattle-system",
+            "clusterId": cluster_id,
+        }
+
+        response = requests.post(
+            f"{rancher_url}/v3/project", headers=headers, json=payload, verify=self.verify != "false"
+        )
+
+        if response.status_code == 201:
+            project_data = response.json()
+            return project_data["id"]
+        else:
+            logger.error(f"Failed to create Rancher project: {response.text}")
+            raise ApiException(f"Rancher API error: {response.status_code} - {response.text}")
+
+
     def _create_project(self, project_name, project_id):
         pi_username = self.allocation.project.pi.username
         rancher_id = self.resource.get_attribute('rancher_project_id')
+        if not rancher_id:
+            rancher_id = self.call_rancher_api_to_create_project(project_name)
+            self.resource.set_attribute('rancher_project_id', rancher_id)
+
         annotations = {
             "cf_project_id": str(self.allocation.project_id),
             "cf_pi": pi_username,

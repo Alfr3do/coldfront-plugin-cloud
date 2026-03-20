@@ -1,6 +1,5 @@
 import datetime
 import logging
-import os
 import time
 
 from coldfront.core.allocation.models import Allocation, AllocationUser
@@ -209,34 +208,3 @@ def remove_user_from_allocation(allocation_user_pk):
         else:
             logger.warning("No project has been created. Nothing to disable.")
 
-def call_rancher_api_to_create_project(project_name):
-    import requests
-    rancher_token = os.getenv(f"OPENSHIFT_{self.safe_resource_name}_TOKEN")
-    rancher_url = self.resource.get_attribute(attributes.RESOURCE_API_URL)
-    cluster_id = self.allocation.resource.get_attribute('cluster_id')
-
-    headers = {
-        "Authorization": f"Bearer {rancher_token}",
-        "Content-Type": "application/json",
-    }
-
-    payload = {
-        "name": project_name,
-        "namespaceId": "cattle-system",
-        "clusterId": cluster_id,
-    }
-
-    response = requests.post(
-        f"{rancher_url}/v3/project", headers=headers, json=payload, verify=self.verify != "false"
-    )
-
-    if response.status_code == 201:
-        project_data = response.json()
-        return project_data["id"]
-    else:
-        logger.error(f"Failed to create Rancher project: {response.text}")
-        raise ApiException(f"Rancher API error: {response.status_code} - {response.text}")
-
-class ApiException(Exception):
-    def __init__(self, message):
-        self.message = message
