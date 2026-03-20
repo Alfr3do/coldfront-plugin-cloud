@@ -209,7 +209,7 @@ def remove_user_from_allocation(allocation_user_pk):
         else:
             logger.warning("No project has been created. Nothing to disable.")
 
-def call_rancher_api_to_create_project(self, project_name):
+def call_rancher_api_to_create_project(project_name):
     import requests
     rancher_token = os.getenv(f"OPENSHIFT_{self.safe_resource_name}_TOKEN")
     rancher_url = self.resource.get_attribute(attributes.RESOURCE_API_URL)
