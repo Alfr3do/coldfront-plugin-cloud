@@ -528,20 +528,23 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
                 api.create(body=payload, namespace=project_name)
                 for pu in self.allocation.allocationuser_set.all():
                     member = pu.user
-                    user_ns = self._openshift_get_namespace(namespace_name=f"{project_name}-{member.username}")
-                    if (not user_ns):
-                        annotations = {
+                    try:
+                        self._openshift_get_namespace(namespace_name=f"{project_name}-{member.username}")
+                    except ApiException as e:
+                        if e.status == 404:
+                            annotations = {
                             "field.cattle.io/projectId": rancher_id
-                        }
-                        namespace_def = {
+                            }
+                            namespace_def = {
                             "metadata": {
                             "name": f"{project_name}-{member.username}",
                             "annotations": annotations,
                             "labels": annotations,
-                            },
-                        }
-                        self._openshift_create_namespace(namespace_def)
-
+                                },
+                            }
+                            self._openshift_create_namespace(namespace_def)
+                        else:
+                            raise e
                     
                     # Create the Kubernetes RoleBinding for this specific user
                     logger.info(f"found in members {member}")
