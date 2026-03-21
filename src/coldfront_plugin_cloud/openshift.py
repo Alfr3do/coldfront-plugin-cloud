@@ -13,7 +13,7 @@ import kubernetes.dynamic.exceptions as kexc
 from openshift.dynamic import DynamicClient
 
 from coldfront_plugin_cloud import attributes, base, utils
-from coldfront.core.resource.models import ResourceAttribute, ResourceAttributeType
+from coldfront.core.resource.models import AllocationAttribute, AllocationAttributeType
 
 logger = logging.getLogger(__name__)
 
@@ -428,13 +428,13 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
 
     def update_resource_project_id(self, rancher_id):
         # 1. Get the attribute type object (must exist in ColdFront Admin first)
-        attr_type = ResourceAttributeType.objects.get(name='rancher_project_id')
+        attr_type = AllocationAttributeType.objects.get(name='rancher_project_id')
         
         # 2. Update or create the specific attribute for this resource
         # 'value' is usually a TextField in ColdFront
-        attr, created = ResourceAttribute.objects.update_or_create(
-            resource=self.resource,
-            resource_attribute_type=attr_type,
+        attr, created = AllocationAttribute.objects.update_or_create(
+            allocation=self.resource,
+            allocation_attribute_type=attr_type,
             defaults={'value': rancher_id}
         )
         return attr
@@ -443,7 +443,7 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
         import requests
         rancher_token = os.getenv(f"OPENSHIFT_{self.safe_resource_name}_TOKEN")
         rancher_url = self.resource.get_attribute(attributes.RESOURCE_API_URL)
-        cluster_id = self.resource.get_attribute('cluster_id')
+        cluster_id = self.allocation.get_attribute('cluster_id')
 
         headers = {
             "Authorization": f"Bearer {rancher_token}",
@@ -471,8 +471,9 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
 
     def _create_project(self, project_name, project_id):
         pi_username = self.allocation.project.pi.username
-        rancher_id = self.resource.get_attribute('rancher_project_id')
-        print(f"Creating project with name {project_name}, id {project_id}, for PI {pi_username} and rancher_id {rancher_id}")
+        rancher_id = self.allocation.get_attribute('rancher_project_id')
+        logger.info(f"Creating project with name {project_name}, id {project_id}, for PI {pi_username} and rancher_id {rancher_id}")
+        
         rancher_cluster = ""
         if not rancher_id:
             rancher_project = self.call_rancher_api_to_create_project(project_name)
@@ -480,6 +481,9 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
                 rancher_project = rancher_project.split(':')
                 rancher_cluster, rancher_project = rancher_project[0], rancher_project[1]
             self.update_resource_project_id(rancher_project) 
+        else:
+            rancher_project = rancher_id
+            rancher_cluster = self.allocation.get_attribute('cluster_id')
             
 
         annotations = {
@@ -506,8 +510,8 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
     
     def _create_role_binding_for_hub(self, project_name):
         #defined in coldfront resource attr, jhuh
-        rancher_id = self.resource.get_attribute('rancher_project_id')
-        extra_ns_attr = self.resource.get_attribute('extra_rolebindings') 
+        rancher_id = self.allocation.get_attribute('rancher_project_id')
+        extra_ns_attr = self.allocation.get_attribute('extra_rolebindings') 
         namespaces = [ns.strip() for ns in extra_ns_attr.split(',')]
         
         if len(namespaces) > 0:
