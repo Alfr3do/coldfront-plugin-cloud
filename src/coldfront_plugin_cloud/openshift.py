@@ -535,13 +535,16 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
                         #if e.status == 404:
                         logger.error(f"Error checking/creating namespace for user {member.username}: {e} ")
                         annotations = {
-                        "field.cattle.io/projectId": f"{rancher_cluster}:{rancher_id}"
+                            "field.cattle.io/projectId": f"{rancher_cluster}:{rancher_id}"
+                        }
+                        labels = {
+                            "field.cattle.io/projectId": f"{rancher_id}"
                         }
                         namespace_def = {
                         "metadata": {
                         "name": f"{project_name}-{member.username}",
                         "annotations": annotations,
-                        "labels": annotations,
+                        "labels": labels,
                             },
                         }
                         self._openshift_create_namespace(namespace_def)
