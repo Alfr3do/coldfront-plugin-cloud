@@ -542,7 +542,7 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
                         }
                         namespace_def = {
                         "metadata": {
-                        "name": f"{project_name}-{member.username}",
+                        "name": f"{project_name}-{member.username.lower()}",
                         "annotations": annotations,
                         "labels": labels,
                             },
