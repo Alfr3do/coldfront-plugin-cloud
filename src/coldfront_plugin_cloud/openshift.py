@@ -13,7 +13,7 @@ import kubernetes.dynamic.exceptions as kexc
 from openshift.dynamic import DynamicClient
 
 from coldfront_plugin_cloud import attributes, base, utils
-from coldfront.core.resource.models import AllocationAttribute, AllocationAttributeType
+from coldfront.core.allocation.models import AllocationAttribute, AllocationAttributeType
 
 logger = logging.getLogger(__name__)
 
