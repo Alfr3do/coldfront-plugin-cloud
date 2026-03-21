@@ -511,7 +511,7 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
     def _create_role_binding_for_hub(self, project_name):
         #defined in coldfront resource attr, jhuh
         rancher_id = self.allocation.get_attribute('rancher_project_id')
-        extra_ns_attr = self.allocation.get_attribute('extra_rolebindings') 
+        extra_ns_attr = self.resource.get_attribute('extra_rolebindings') 
         namespaces = [ns.strip() for ns in extra_ns_attr.split(',')]
         
         if len(namespaces) > 0:
