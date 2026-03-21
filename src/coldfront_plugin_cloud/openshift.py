@@ -513,7 +513,7 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
         rancher_id = self.allocation.get_attribute('rancher_project_id')
         rancher_cluster = self.allocation.get_attribute('cluster_id')
         extra_ns_attr = self.resource.get_attribute('extra_rolebindings') 
-        namespaces = [ns.strip() for ns in extra_ns_attr.split(',')]
+        namespaces = [ns.strip().lower() for ns in extra_ns_attr.split(',')]
         
         if len(namespaces) > 0:
             api = self.get_resource_api("rbac.authorization.k8s.io/v1", "RoleBinding")
