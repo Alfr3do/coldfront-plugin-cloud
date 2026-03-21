@@ -472,6 +472,8 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
     def _create_project(self, project_name, project_id):
         pi_username = self.allocation.project.pi.username
         rancher_id = self.resource.get_attribute('rancher_project_id')
+        print(f"Creating project with name {project_name}, id {project_id}, for PI {pi_username} and rancher_id {rancher_id}")
+        rancher_cluster = ""
         if not rancher_id:
             rancher_project = self.call_rancher_api_to_create_project(project_name)
             if len(rancher_project.split(':'))> 1:
