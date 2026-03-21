@@ -485,7 +485,7 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
             "cf_pi": pi_username,
             "openshift.io/display-name": project_name,
             "openshift.io/requester": pi_username,
-            "field.cattle.io/projectId": rancher_project
+            "field.cattle.io/projectId": f"{rancher_cluster}:{rancher_project}"
         }
 
         project_def = {
