@@ -530,21 +530,23 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
                     member = pu.user
                     try:
                         self._openshift_get_namespace(namespace_name=f"{project_name}-{member.username}")
-                    except ApiException as e:
-                        if e.status == 404:
-                            annotations = {
-                            "field.cattle.io/projectId": rancher_id
-                            }
-                            namespace_def = {
-                            "metadata": {
-                            "name": f"{project_name}-{member.username}",
-                            "annotations": annotations,
-                            "labels": annotations,
-                                },
-                            }
-                            self._openshift_create_namespace(namespace_def)
-                        else:
-                            raise e
+                    except Exception as e:
+                        #if e.status == 404:
+                        logger.error(f"Error checking/creating namespace for user {member.username}: {e.message} {e}")
+                        annotations = {
+                        "field.cattle.io/projectId": rancher_id
+                        }
+                        namespace_def = {
+                        "metadata": {
+                        "name": f"{project_name}-{member.username}",
+                        "annotations": annotations,
+                        "labels": annotations,
+                            },
+                        }
+                        self._openshift_create_namespace(namespace_def)
+                        #else:
+                        # #    logger.error(f"Error checking/creating namespace for user {member.username}: {e.message}")
+                        #    raise e
                     
                     # Create the Kubernetes RoleBinding for this specific user
                     logger.info(f"found in members {member}")
