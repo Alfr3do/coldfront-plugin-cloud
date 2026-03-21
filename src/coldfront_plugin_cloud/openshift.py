@@ -532,7 +532,7 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
                         self._openshift_get_namespace(namespace_name=f"{project_name}-{member.username}")
                     except Exception as e:
                         #if e.status == 404:
-                        logger.error(f"Error checking/creating namespace for user {member.username}: {e.message} {e}")
+                        logger.error(f"Error checking/creating namespace for user {member.username}: {e} ")
                         annotations = {
                         "field.cattle.io/projectId": rancher_id
                         }
