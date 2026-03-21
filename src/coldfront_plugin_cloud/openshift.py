@@ -426,14 +426,14 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
             # Rolebinding doesn't exist, nothing to remove
             pass
 
-    def update_resource_project_id(self, rancher_id):
+    def update_allocation_project_id(self, rancher_id):
         # 1. Get the attribute type object (must exist in ColdFront Admin first)
         attr_type = AllocationAttributeType.objects.get(name='rancher_project_id')
         
         # 2. Update or create the specific attribute for this resource
         # 'value' is usually a TextField in ColdFront
         attr, created = AllocationAttribute.objects.update_or_create(
-            allocation=self.resource,
+            allocation=self.allocation,
             allocation_attribute_type=attr_type,
             defaults={'value': rancher_id}
         )
@@ -480,7 +480,7 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
             if len(rancher_project.split(':'))> 1:
                 rancher_project = rancher_project.split(':')
                 rancher_cluster, rancher_project = rancher_project[0], rancher_project[1]
-            self.update_resource_project_id(rancher_project) 
+            self.update_allocation_project_id(rancher_project) 
         else:
             rancher_project = rancher_id
             rancher_cluster = self.allocation.get_attribute('cluster_id')
