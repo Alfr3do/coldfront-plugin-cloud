@@ -449,9 +449,10 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
             "Authorization": f"Bearer {rancher_token}",
             "Content-Type": "application/json",
         }
-
+        project_name = '-'.join(project_name.split("-")[0:-1])
         payload = {
-            "name": project_name.split("-")[0:-1],
+            "name": project_name,
+            "displayName": project_name,
             "namespaceId": "cattle-system",
             "clusterId": cluster_id,
         }
@@ -472,8 +473,10 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
         pi_username = self.allocation.project.pi.username
         rancher_id = self.resource.get_attribute('rancher_project_id')
         if not rancher_id:
-            rancher_data = self.call_rancher_api_to_create_project(project_name).split(':')
-            rancher_cluster, rancher_project = rancher_data[0], rancher_data[1]
+            rancher_project = self.call_rancher_api_to_create_project(project_name)
+            if len(rancher_project.split(':'))> 1:
+                rancher_project = rancher_project.split(':')
+                rancher_cluster, rancher_project = rancher_project[0], rancher_project[1]
             self.update_resource_project_id(rancher_project) 
             
 
@@ -488,7 +491,6 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
         project_def = {
             "metadata": {
                 "name": project_name,
-                "displayName": project_name,
                 "annotations": annotations,
                 "labels": {**PROJECT_DEFAULT_LABELS, "field.cattle.io/projectId": rancher_project},
             },
