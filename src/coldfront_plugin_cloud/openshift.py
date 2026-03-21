@@ -511,6 +511,7 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
     def _create_role_binding_for_hub(self, project_name):
         #defined in coldfront resource attr, jhuh
         rancher_id = self.allocation.get_attribute('rancher_project_id')
+        rancher_cluster = self.allocation.get_attribute('cluster_id')
         extra_ns_attr = self.resource.get_attribute('extra_rolebindings') 
         namespaces = [ns.strip() for ns in extra_ns_attr.split(',')]
         
@@ -534,7 +535,7 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
                         #if e.status == 404:
                         logger.error(f"Error checking/creating namespace for user {member.username}: {e} ")
                         annotations = {
-                        "field.cattle.io/projectId": rancher_id
+                        "field.cattle.io/projectId": f"{rancher_cluster}:{rancher_id}"
                         }
                         namespace_def = {
                         "metadata": {
