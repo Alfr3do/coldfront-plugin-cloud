@@ -535,12 +535,18 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
                     except Exception as e:
                         node_sel = self.resource.get_attribute('node_selector')
                         tol_str = self.resource.get_attribute('tolerations')
+                        gpu_resource_name = self.resource.get_attribute('k8s_resource_name') or 'nvidia.com/mig-1g.10gb'
+                        gpu_count = self.resource.get_attribute('gpu_count') or 1
+
                         if e:
                            logger.error(f"Unexpected error checking/creating namespace for user {member.username}: {e} {type(e)} e == '404' ? {e == '404'}")
                            annotations = {
                             "field.cattle.io/projectId": f"{rancher_cluster}:{rancher_id}",
                             "target-node-selector": node_sel, 
-                            "target-tolerations": tol_str     
+                            "target-tolerations": tol_str,
+                            "gpu-resource-name": gpu_resource_name,
+                            "gpu-count": gpu_count
+                            
                            }
                            labels = {
                             "field.cattle.io/projectId": f"{rancher_id}"
