@@ -532,10 +532,10 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
                     member = pu.user
                     try:
                         self._openshift_get_namespace(namespace_name=f"{project_name}-{member.username}")
-                    except Exception as e:
+                    except ApiException as e:
                         node_sel = self.resource.get_attribute('node_selector')
                         tol_str = self.resource.get_attribute('tolerations')
-                        if e and e.code == 404:
+                        if e and e["code"] == 404:
                           annotations = {
                             "field.cattle.io/projectId": f"{rancher_cluster}:{rancher_id}",
                             "target-node-selector": node_sel, 
@@ -555,6 +555,9 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
                         else:
                         #     logger.error(f"Error checking/creating namespace for user {member.username}: {e.message}")
                             logger.error(f"Error checking/creating namespace for user {member.username}: {e} ")
+                        raise e
+                    except Exception as e:
+                        logger.error(f"Unexpected error checking/creating namespace for user {member.username}: {e}")
                         raise e
                     
                     # Create the Kubernetes RoleBinding for this specific user
