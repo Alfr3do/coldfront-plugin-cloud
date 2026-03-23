@@ -532,25 +532,29 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
                     try:
                         self._openshift_get_namespace(namespace_name=f"{project_name}-{member.username}")
                     except Exception as e:
-                        #if e.status == 404:
-                        logger.error(f"Error checking/creating namespace for user {member.username}: {e} ")
-                        annotations = {
-                            "field.cattle.io/projectId": f"{rancher_cluster}:{rancher_id}"
-                        }
-                        labels = {
+                        node_sel = self.allocation.resource.get_attribute('node_selector')
+                        tol_str = self.allocation.resource.get_attribute('tolerations')
+                        if 'code' in e and e.code == 404:
+                          annotations = {
+                            "field.cattle.io/projectId": f"{rancher_cluster}:{rancher_id}",
+                            "target-node-selector": node_sel, 
+                            "target-tolerations": tol_str     
+                          }
+                          labels = {
                             "field.cattle.io/projectId": f"{rancher_id}"
-                        }
-                        namespace_def = {
-                        "metadata": {
-                        "name": f"{project_name}-{member.username.lower()}",
-                        "annotations": annotations,
-                        "labels": labels,
+                          }
+                          namespace_def = {
+                          "metadata": {
+                          "name": f"{project_name}-{member.username.lower()}",
+                          "annotations": annotations,
+                          "labels": labels,
                             },
-                        }
-                        self._openshift_create_namespace(namespace_def)
-                        #else:
-                        # #    logger.error(f"Error checking/creating namespace for user {member.username}: {e.message}")
-                        #    raise e
+                          }
+                          self._openshift_create_namespace(namespace_def)
+                        else:
+                        #     logger.error(f"Error checking/creating namespace for user {member.username}: {e.message}")
+                            logger.error(f"Error checking/creating namespace for user {member.username}: {e} ")
+                        raise e
                     
                     # Create the Kubernetes RoleBinding for this specific user
                     logger.info(f"found in members {member}")
