@@ -534,7 +534,7 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
                     except Exception as e:
                         node_sel = self.resource.get_attribute('node_selector')
                         tol_str = self.resource.get_attribute('tolerations')
-                        if 'code' in e and e.code == 404:
+                        if e and e.code == 404:
                           annotations = {
                             "field.cattle.io/projectId": f"{rancher_cluster}:{rancher_id}",
                             "target-node-selector": node_sel, 
