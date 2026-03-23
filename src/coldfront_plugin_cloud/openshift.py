@@ -532,8 +532,8 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
                     try:
                         self._openshift_get_namespace(namespace_name=f"{project_name}-{member.username}")
                     except Exception as e:
-                        node_sel = self.allocation.resource.get_attribute('node_selector')
-                        tol_str = self.allocation.resource.get_attribute('tolerations')
+                        node_sel = self.resource.get_attribute('node_selector')
+                        tol_str = self.resource.get_attribute('tolerations')
                         if 'code' in e and e.code == 404:
                           annotations = {
                             "field.cattle.io/projectId": f"{rancher_cluster}:{rancher_id}",
