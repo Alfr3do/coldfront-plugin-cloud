@@ -375,12 +375,13 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
         self._openshift_create_user(user_def)
         self._openshift_create_identity(identity_def)
         self._openshift_create_useridentitymapping(identity_mapping_def)
-        logger.info(f"User {unique_id} successfully created")
+        logger.error(f"[DEBUG] User {unique_id} successfully created")
 
     def assign_role_on_user(self, username, project_id):
         """Assign a role to a user in a project using direct OpenShift API calls"""
         # Wait for Rancher to finalize the namespace
-        time.sleep(0.1) 
+        logger.error(f"[DEBUG] Assigning role to user {username} in project {project_id}")
+        time.sleep(0.5) 
         try:
             # Try to get existing rolebindings with same name
             # as the role name in project's namespace
@@ -472,7 +473,7 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
     def _create_project(self, project_name, project_id):
         pi_username = self.allocation.project.pi.username
         rancher_id = self.allocation.get_attribute('rancher_project_id')
-        logger.info(f"Creating project with name {project_name}, id {project_id}, for PI {pi_username} and rancher_id {rancher_id}")
+        logger.error(f"[DEBUG] Creating project with name {project_name}, id {project_id}, for PI {pi_username} and rancher_id {rancher_id}")
         
         rancher_cluster = ""
         if not rancher_id:
@@ -506,7 +507,7 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
         self._openshift_create_limits(project_name)
         self._create_role_binding_for_hub(project_name)
 
-        logger.info(f"Project {project_id} and limit range successfully created")
+        logger.error(f"[DEBUG] Project {project_id} and limit range successfully created")
     
     def _create_role_binding_for_hub(self, project_name):
         #defined in coldfront resource attr, jhuh
@@ -557,7 +558,7 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
                         raise e
                     
                     # Create the Kubernetes RoleBinding for this specific user
-                    logger.info(f"found in members {member}")
+                    logger.error(f"[DEBUG] found in members {member}")
                     payload_user = {
                     "metadata": {"name": f"access-{member.username}-to-{project_name}", "namespace": project_name},
                     "subjects": [{"apiGroup": "rbac.authorization.k8s.io","name": member.username, "kind": "User"}],
