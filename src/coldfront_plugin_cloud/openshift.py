@@ -548,36 +548,31 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
                         logger.error(f"[DEBUG] Checking namespace  {project_name}-{member.username.lower()} ")
                         self._openshift_get_namespace(namespace_name=f"{project_name}-{member.username.lower()}")
                     except kexc.NotFoundError as e:
-                        logger.error(f"[DEBUG] Not found exception for namespace {project_name}-{member.username.lower()}: {e} {type(e)} e == '404' ? {e == '404'}")
+                        logger.error(f"[DEBUG] Not found exception for namespace {project_name}-{member.username.lower()}:")
                         node_sel = self.resource.get_attribute('node_selector')
                         tol_str = self.resource.get_attribute('tolerations')
                         gpu_resource_name = self.resource.get_attribute('k8s_resource_name') or 'nvidia.com/mig-1g.10gb'
-                        gpu_count = self.resource.get_attribute('gpu_count') or 1
+                        gpu_count = self.resource.get_attribute('gpu_count') or '1'
 
-                        if e:
-                           logger.error(f"Unexpected error checking/creating namespace for user {member.username}: {e} {type(e)} e == '404' ? {e == '404'}")
-                           annotations = {
-                            "field.cattle.io/projectId": f"{rancher_cluster}:{rancher_id}",
-                            "target-node-selector": node_sel, 
-                            "target-tolerations": tol_str,
-                            "gpu-resource-name": gpu_resource_name,
-                            "gpu-count": gpu_count
-                           }
-                           labels = {
-                            "field.cattle.io/projectId": f"{rancher_id}"
-                           }
-                           namespace_def = {
-                           "metadata": {
-                           "name": f"{project_name}-{member.username.lower()}",
-                           "annotations": annotations,
-                           "labels": labels,
-                             },
-                           }
-                           self._openshift_create_namespace(namespace_def)
-                        else:
-                        #     logger.error(f"Error checking/creating namespace for user {member.username}: {e.message}")
-                            logger.error(f"Error checking/creating namespace for user {member.username}: {e} ")
-                        raise e
+                        logger.error(f"Unexpected error checking/creating namespace for user {member.username}")
+                        annotations = {
+                        "field.cattle.io/projectId": f"{rancher_cluster}:{rancher_id}",
+                        "target-node-selector": node_sel, 
+                        "target-tolerations": tol_str,
+                        "gpu-resource-name": gpu_resource_name,
+                        "gpu-count": f"{gpu_count}"
+                        }
+                        labels = {
+                        "field.cattle.io/projectId": f"{rancher_id}"
+                        }
+                        namespace_def = {
+                        "metadata": {
+                        "name": f"{project_name}-{member.username.lower()}",
+                        "annotations": annotations,
+                        "labels": labels,
+                            },
+                        }
+                        self._openshift_create_namespace(namespace_def)
                     except Exception as e:
                         logger.error(f"Unexpected error checking/creating namespace for user {member.username}: {e} {type(e)}")
                         raise e
