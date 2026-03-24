@@ -584,8 +584,14 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
                     "subjects": [{"apiGroup": "rbac.authorization.k8s.io","name": member.username, "kind": "User"}],
                     "roleRef": {"apiGroup": "rbac.authorization.k8s.io", "name": "edit", "kind": "ClusterRole"},
                     }
-                    api.create(body=payload_user, namespace=project_name)
-                    
+                    try:
+                        api.create(body=payload_user, namespace=project_name)
+                    except kexc.ConflictError:
+                        logger.error(f"[DEBUG] RoleBinding for {member.username} already exists in {project_name}, skipping creation.")
+                        pass
+                    except Exception as e:
+                        logger.error(f"Unexpected error creating RoleBinding for user {member.username} in project {project_name}: {e} {type(e)}")
+                        raise e
     def _copy_harbor_secret(self, target_namespace):
         api = self.get_resource_api("v1", "Secret")
         source_secret = api.get(name="image-pull-secret", namespace="jupyterhub")
