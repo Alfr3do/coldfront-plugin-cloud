@@ -9,7 +9,7 @@ import copy
 from collections import namedtuple
 
 import kubernetes
-import kubernetes.dynamic.exceptions as kexc, NotFoundError, ResourceNotFoundError
+import kubernetes.dynamic.exceptions as kexc
 from openshift.dynamic import DynamicClient
 
 from coldfront_plugin_cloud import attributes, base, utils
@@ -547,7 +547,7 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
                     try:
                         logger.error(f"[DEBUG] Checking namespace  {project_name}-{member.username.lower()} ")
                         self._openshift_get_namespace(namespace_name=f"{project_name}-{member.username.lower()}")
-                    except (NotFoundError, ResourceNotFoundError) as e:
+                    except kexc.NotFoundError as e:
                         logger.error(f"[DEBUG] Not found exception for namespace {project_name}-{member.username.lower()}: {e} {type(e)} e == '404' ? {e == '404'}")
                         node_sel = self.resource.get_attribute('node_selector')
                         tol_str = self.resource.get_attribute('tolerations')
