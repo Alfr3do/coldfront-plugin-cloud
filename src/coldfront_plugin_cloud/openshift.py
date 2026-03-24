@@ -505,10 +505,14 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
         }
         try:
             self._openshift_create_project(project_def)
-        except Exception as e:
+        except kexc.ConflictError:
             #TODO only ignore if already exists
-            logger.error(f"Error creating project {project_name}: {e}")
-        self._openshift_create_limits(project_name)
+            pass
+        try:
+            self._openshift_create_limits(project_name)
+        except Exception as e:
+            logger.error(f"Error creating limits or role bindings for project {project_name}: {e}")
+            
         self._create_role_binding_for_hub(project_name)
 
         logger.error(f"[DEBUG] Project {project_id} and limit range successfully created")
@@ -531,13 +535,17 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
                     "subjects": [{"kind": "ServiceAccount", "name": f"{sa_name}", "namespace": f"{ns}"}],
                     "roleRef": {"kind": "ClusterRole", "name": f"{role_name}", "apiGroup": "rbac.authorization.k8s.io"}
                 }
-                api.create(body=payload, namespace=project_name)
+                try:
+                    api.create(body=payload, namespace=project_name)
+                except kexc.ConflictError:
+                    logger.error(f"[DEBUG] RoleBinding for {sa_name} already exists in {project_name}, skipping creation.")
+                    pass
                 for pu in self.allocation.allocationuser_set.all():
                     member = pu.user
                     try:
                         logger.error(f"[DEBUG] Checking namespace  {project_name}-{member.username.lower()} ")
                         self._openshift_get_namespace(namespace_name=f"{project_name}-{member.username}")
-                    except Exception as e:
+                    except ApiException as e:
                         node_sel = self.resource.get_attribute('node_selector')
                         tol_str = self.resource.get_attribute('tolerations')
                         gpu_resource_name = self.resource.get_attribute('k8s_resource_name') or 'nvidia.com/mig-1g.10gb'
@@ -551,7 +559,6 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
                             "target-tolerations": tol_str,
                             "gpu-resource-name": gpu_resource_name,
                             "gpu-count": gpu_count
-                            
                            }
                            labels = {
                             "field.cattle.io/projectId": f"{rancher_id}"
