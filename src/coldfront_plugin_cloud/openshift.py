@@ -503,8 +503,11 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
                 "labels": {**PROJECT_DEFAULT_LABELS, "field.cattle.io/projectId": rancher_project},
             },
         }
-
-        self._openshift_create_project(project_def)
+        try:
+            self._openshift_create_project(project_def)
+        except Exception as e:
+            #TODO only ignore if already exists
+            logger.error(f"Error creating project {project_name}: {e}")
         self._openshift_create_limits(project_name)
         self._create_role_binding_for_hub(project_name)
 
