@@ -380,6 +380,7 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
     def assign_role_on_user(self, username, project_id):
         """Assign a role to a user in a project using direct OpenShift API calls"""
         # Wait for Rancher to finalize the namespace
+        return
         logger.error(f"[DEBUG] Assigning role on user {username} in project {project_id}")
         time.sleep(0.5) 
         try:
