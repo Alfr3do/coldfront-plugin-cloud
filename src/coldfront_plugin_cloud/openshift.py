@@ -9,7 +9,7 @@ import copy
 from collections import namedtuple
 
 import kubernetes
-import kubernetes.dynamic.exceptions as kexc
+import kubernetes.dynamic.exceptions as kexc, NotFoundError, ResourceNotFoundError
 from openshift.dynamic import DynamicClient
 
 from coldfront_plugin_cloud import attributes, base, utils
@@ -510,6 +510,8 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
             pass
         try:
             self._openshift_create_limits(project_name)
+        except kexc.ConflictError:
+            pass
         except Exception as e:
             logger.error(f"Error creating limits or role bindings for project {project_name}: {e}")
             
@@ -544,8 +546,9 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
                     member = pu.user
                     try:
                         logger.error(f"[DEBUG] Checking namespace  {project_name}-{member.username.lower()} ")
-                        self._openshift_get_namespace(namespace_name=f"{project_name}-{member.username}")
-                    except ApiException as e:
+                        self._openshift_get_namespace(namespace_name=f"{project_name}-{member.username.lower()}")
+                    except (NotFoundError, ResourceNotFoundError) as e:
+                        logger.error(f"[DEBUG] Not found exception for namespace {project_name}-{member.username.lower()}: {e} {type(e)} e == '404' ? {e == '404'}")
                         node_sel = self.resource.get_attribute('node_selector')
                         tol_str = self.resource.get_attribute('tolerations')
                         gpu_resource_name = self.resource.get_attribute('k8s_resource_name') or 'nvidia.com/mig-1g.10gb'
@@ -574,6 +577,9 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
                         else:
                         #     logger.error(f"Error checking/creating namespace for user {member.username}: {e.message}")
                             logger.error(f"Error checking/creating namespace for user {member.username}: {e} ")
+                        raise e
+                    except Exception as e:
+                        logger.error(f"Unexpected error checking/creating namespace for user {member.username}: {e} {type(e)}")
                         raise e
                     
                     # Create the Kubernetes RoleBinding for this specific user
