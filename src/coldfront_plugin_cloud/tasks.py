@@ -150,7 +150,7 @@ def activate_allocation(allocation_pk):
 
         pi_username = allocation.project.pi.username
         allocator.get_or_create_federated_user(pi_username)
-        allocator.assign_role_on_user(pi_username, project_id)
+        #allocator.assign_role_on_user(pi_username, project_id)
 
         allocator.set_quota(project_id)
 

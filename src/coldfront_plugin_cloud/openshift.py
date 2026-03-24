@@ -380,7 +380,7 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
     def assign_role_on_user(self, username, project_id):
         """Assign a role to a user in a project using direct OpenShift API calls"""
         # Wait for Rancher to finalize the namespace
-        logger.error(f"[DEBUG] Assigning role to user {username} in project {project_id}")
+        logger.error(f"[DEBUG] Assigning role on user {username} in project {project_id}")
         time.sleep(0.5) 
         try:
             # Try to get existing rolebindings with same name
@@ -531,6 +531,7 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
                 for pu in self.allocation.allocationuser_set.all():
                     member = pu.user
                     try:
+                        logger.error(f"[DEBUG] Checking namespace  {project_name}-{member.username.lower()} ")
                         self._openshift_get_namespace(namespace_name=f"{project_name}-{member.username}")
                     except Exception as e:
                         node_sel = self.resource.get_attribute('node_selector')
