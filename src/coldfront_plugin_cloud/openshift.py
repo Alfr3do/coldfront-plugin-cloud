@@ -334,6 +334,23 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
         pass
 
     def disable_project(self, project_id):
+        # Delete user-specific namespaces created during provisioning
+        for pu in self.allocation.allocationuser_set.all():
+            user_ns = f"{project_id}-{pu.user.username.lower()}"
+            try:
+                self._openshift_delete_project(user_ns)
+                logger.info(f"User namespace {user_ns} successfully deleted")
+            except kexc.NotFoundError:
+                pass
+            except Exception as e:
+                logger.error(f"Failed to delete user namespace {user_ns}: {e}")
+
+        # Delete the associated Rancher project
+        try:
+            self._delete_rancher_project()
+        except Exception as e:
+            logger.error(f"Error during Rancher project deletion: {e}")
+
         self._openshift_delete_project(project_id)
         logger.info(f"Project {project_id} successfully deleted")
 
@@ -470,7 +487,30 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
             logger.error(f"Failed to create Rancher project: {response.text}")
             raise ApiException(f"Rancher API error: {response.status_code} - {response.text}")
 
+    def _delete_rancher_project(self):
+        import requests
+        rancher_id = self.allocation.get_attribute('rancher_project_id')
+        cluster_id = self.allocation.get_attribute('cluster_id')
+        if not rancher_id or not cluster_id:
+            return
 
+        rancher_token = os.getenv(f"OPENSHIFT_{self.safe_resource_name}_TOKEN")
+        rancher_url = self.resource.get_attribute(attributes.RESOURCE_API_URL)
+
+        headers = {
+            "Authorization": f"Bearer {rancher_token}",
+            "Content-Type": "application/json",
+        }
+        
+        full_id = f"{cluster_id}:{rancher_id}"
+        response = requests.delete(
+            f"{rancher_url}/v3/project/{full_id}", 
+            headers=headers, 
+            verify=self.verify != "false"
+        )
+        if response.status_code not in [200, 204, 404]:
+            logger.error(f"Failed to delete Rancher project {full_id}: {response.text}")
+            
     def _create_project(self, project_name, project_id):
         pi_username = self.allocation.project.pi.username
         rancher_id = self.allocation.get_attribute('rancher_project_id')
