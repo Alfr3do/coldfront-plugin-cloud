@@ -477,7 +477,7 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
         }
 
         response = requests.post(
-            f"{rancher_url}/v3/project", headers=headers, json=payload, verify=self.verify != "false"
+            f"{rancher_url}/v3/project", headers=headers, json=payload, verify= False
         )
 
         if response.status_code == 201:
