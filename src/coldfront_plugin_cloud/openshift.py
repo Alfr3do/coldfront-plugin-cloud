@@ -460,7 +460,8 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
 
     def call_rancher_api_to_create_project(self, project_name):
         import requests
-        rancher_token = os.getenv(f"OPENSHIFT_{self.safe_resource_name}_TOKEN")
+        rancher_token = self.resource.get_attribute(attributes.RESOURCE_API_TOKEN) 
+        #os.getenv(f"OPENSHIFT_{self.safe_resource_name}_TOKEN")
         rancher_url = self.resource.get_attribute(attributes.RESOURCE_API_URL)
         cluster_id = self.allocation.get_attribute('cluster_id')
 

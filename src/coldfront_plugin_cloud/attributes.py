@@ -22,6 +22,7 @@ class CloudAllocationAttribute:
 
 RESOURCE_AUTH_URL = "Identity Endpoint URL"
 RESOURCE_API_URL = "OpenShift API Endpoint URL"
+RESOURCE_API_TOKEN = "OpenShift API Token"
 RESOURCE_IDENTITY_NAME = "OpenShift Identity Provider Name"
 RESOURCE_ROLE = "Role for User in Project"
 RESOURCE_IBM_AVAILABLE = "IBM Spectrum Scale Storage Available"
