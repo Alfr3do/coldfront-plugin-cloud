@@ -195,7 +195,8 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
     @functools.cached_property
     def k8_client(self):
         # Load Endpoint URL and Auth token for new k8 client
-        openshift_token = os.getenv(f"OPENSHIFT_{self.safe_resource_name}_TOKEN")
+        openshift_token = self.resource.get_attribute(attributes.RESOURCE_API_TOKEN)
+        #os.getenv(f"OPENSHIFT_{self.safe_resource_name}_TOKEN")
         openshift_url = self.resource.get_attribute(attributes.RESOURCE_API_URL)
 
         k8_config = kubernetes.client.Configuration()
@@ -207,6 +208,9 @@ class OpenShiftResourceAllocator(base.ResourceAllocator):
             k8_config.verify_ssl = False
         else:
             k8_config.verify_ssl = True
+        
+        #TODO: decide how to handle ssl verification in different environments
+        k8_config.verify_ssl = False
 
         k8s_client = kubernetes.client.ApiClient(configuration=k8_config)
         return DynamicClient(k8s_client)
